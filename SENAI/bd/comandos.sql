@@ -76,3 +76,66 @@ inner join pizzas p on p.pizza_id = i.pizza_id order by i.pedido_id;
 create view vw_itens_sub as select *, (quantidade * valor) as subtotal from itens_pedido;
 select * from vw_itens_sub;
 
+-- Welli
+
+-- ÍNDICES, um campo além da chave primária, que fica classificado, melhorar o desempenho de pesquisas(select)
+-- Exemplo indexar o campo nome da tabela pizza
+create index nom on pizzas(nome);
+
+-- Crie uma view que mostre por ordem de pedido os dados
+-- (pedido_id, cliente_id, data, hora, pizza_id, nome da pizza, valor da pizza, subtotal e total),
+-- nomeie como "vw_pedidos"
+
+select
+p.pedido_id, p.cliente_id, p.data, p.hora, v.pizza_id, v.nome, v.valor, (v.quantidade * v.valor) as subtotal
+from pedidos p
+inner join vw_itens v
+on p.pedido_id = v.pedido_id;
+
+create view vw_pedidos as
+select
+p.pedido_id, p.cliente_id, p.data, p.hora,
+v.pizza_id, v.nome, v.valor, (v.quantidade * v.valor) as subtotal,
+sum(v.quantidade * v.valor) as total
+from pedidos p
+inner join vw_itens v
+on p.pedido_id = v.pedido_id
+group by p.pedido_id;
+
+-- esta view faz mais sentido se adicionar a quantidade de
+drop view vw_pedidos;
+create view vw_pedidos as
+select
+p.pedido_id, p.cliente_id, p.data, p.hora,
+v.pizza_id, v.nome, v.quantidade, v.valor, (v.quantidade * v.valor) as subtotal,
+sum(v.quantidade * v.valor) as total
+from pedidos p
+inner join vw_itens v
+on p.pedido_id = v.pedido_id
+group by p.pedido_id;
+-- Testando a view
+select * from vw_pedidos;
+-- Acrescente na view anterior o nome do cliente e mostre na ordem de pedido decrescente.
+
+-- DESAFIO TRES!
+-- Apenas clientes com pedidos
+select * from clientes inner join pedidos on clientes.cliente_id = pedidos.cliente_id;
+select clientes.nome from clientes inner join pedidos on clientes.cliente_id = pedidos.cliente_id;
+select c.nome from clientes c inner join pedidos p on c.cliente_id = p.cliente_id;
+-- Apenas clientes com pedidos (sem repetição)
+select c.nome from clientes c inner join pedidos p
+on c.cliente_id = p.cliente_id
+group by c.cliente_id;
+-- Sem repetir, mas com total de pedidos que cada um fez.
+select c.nome, count(p.pedido_id) as total_pedido from clientes c inner join pedidos p
+on c.cliente_id = p.cliente_id
+group by c.cliente_id;
+-- Apenas os que não fizeram pedidos
+-- select cliente_id from pedidos where pedido_id = null;
+select * from clientes c left join pedidos p on c.cliente_id = p.cliente_id;
+-- Ou
+select c.nome from clientes c left join pedidos p on c.cliente_id = p.cliente_id;
+where p.pedido_id is null;
+-- Ou
+select c.nome from clientes c where c.cliente_id not in (select cliente_id from pedidos);
+
